@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 apps = FastAPI()
 
+
 fast_models.Base.metadata.create_all(bind=engine)
 
 def get_db():
