@@ -1,11 +1,11 @@
 from flask import flash, redirect, render_template, url_for, request
 from app.forms import LoginForm, RegistrationForm, UpdateForm, BookForm
-from app.models import User, Book
+from app.models import User, Book, CartItem
 from app import app, db, bcrypt
 from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.utils import secure_filename
 import os
-import requests
+# import requests
 
 
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif'}
@@ -46,7 +46,7 @@ def sign_up():
          "password": hashed_password
       }
 
-      response = requests.post("http://127.0.0.1:8000/create_user", json=data)
+      # response = requests.post("http://127.0.0.1:8000/create_user", json=data)
 
       user = User(username = form.username.data, 
                            first_name = form.first_name.data, 
@@ -166,3 +166,32 @@ def delete_book(book_id):
     db.session.commit()
     flash('Your book has been deleted!', 'success')
     return redirect(url_for('books'))
+
+@app.route('/add_to_cart/<int:book_id>')
+@login_required
+def add_to_cart(book_id):
+    book = Book.query.get_or_404(book_id)
+    cart_item = CartItem(user=current_user, book=book)
+    db.session.add(cart_item)
+    db.session.commit()
+    flash('Item added to your cart!', 'success')
+    return redirect(url_for('home'))
+
+@app.route('/cart')
+@login_required
+def cart():
+    cart_items = current_user.cart_items
+    total_price = sum(item.book.price * item.quantity for item in cart_items)
+    return render_template('cart.html', cart_items=cart_items, total_price=total_price)
+
+@app.route('/remove_from_cart/<int:item_id>', methods=['GET', 'POST'])
+@login_required
+def remove_from_cart(item_id):
+    cart_item = CartItem.query.get_or_404(item_id)
+    if cart_item.user != current_user:
+        flash('Permission denied. This item does not belong to you.', 'danger')
+        return redirect(url_for('cart'))
+    db.session.delete(cart_item)
+    db.session.commit()
+    flash('Item removed from your cart.', 'success')
+    return redirect(url_for('cart'))
