@@ -19,6 +19,7 @@ class User(db.Model, UserMixin):
     image_file = db.Column(db.String(20), nullable=False,
                            default='default.jpg')
     password = db.Column(db.String(80), nullable=False)
+    cart_items = db.relationship('CartItem', backref='user', lazy=True)
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}', '{self.image_file}')"
@@ -31,6 +32,13 @@ class Book(db.Model):
     price = db.Column(db.Integer, nullable=False)
     description = db.Column(db.Text, nullable=False)
     image = db.Column(db.String(255), nullable=True)
+    cart_items = db.relationship('CartItem', backref='book', lazy=True)
+
+class CartItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False, default=1)
 
 
 
